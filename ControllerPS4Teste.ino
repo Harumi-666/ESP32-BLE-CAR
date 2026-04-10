@@ -132,11 +132,11 @@ void processGamepad(ControllerPtr ctl) {
     // By query each button individually:
     //  a(), b(), x(), y(), l1(), etc...
 
-    //if (ctl->a()){
-    //    digitalWrite(LED_BUILTIN, HIGH);
-    //} else {
-    //    digitalWrite(LED_BUILTIN, LOW);        
-    //}
+    if (ctl->a()){
+        digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+        digitalWrite(LED_BUILTIN, LOW);        
+    }
 
     if (ctl->a()) {
         static int colorIdx = 0;
