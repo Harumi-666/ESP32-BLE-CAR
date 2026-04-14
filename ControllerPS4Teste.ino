@@ -1,6 +1,6 @@
 #include <Bluepad32.h>
 
-const int builtInLed = 2;
+//const int builtInLed = 2;
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
 
@@ -132,10 +132,10 @@ void processGamepad(ControllerPtr ctl) {
     // By query each button individually:
     //  a(), b(), x(), y(), l1(), etc...
 
+    //TENTATIVA DE EXECUTAR UM TOGGLE NO LED COM BOTAO A
     if (ctl->a()){
-        digitalWrite(LED_BUILTIN, HIGH);
-    } else {
-        digitalWrite(LED_BUILTIN, LOW);        
+        bool pinState = !LED_BUILTIN;
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));        
     }
 
     if (ctl->a()) {
