@@ -1,6 +1,10 @@
 #include <Bluepad32.h>
 
-//const int builtInLed = 2;
+//////////////////////////
+unsigned long previousMillis = 0;  // will store last time LED was updated
+int blinkIndex;
+bool blinkEnable;
+////////////////////////
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
 
@@ -133,10 +137,20 @@ void processGamepad(ControllerPtr ctl) {
     //  a(), b(), x(), y(), l1(), etc...
 
     //TENTATIVA DE EXECUTAR UM TOGGLE NO LED COM BOTAO A
+    //tentar debaouce com delay e com milis
     if (ctl->a()){
-        bool pinState = !LED_BUILTIN;
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));        
+        delay(50); //debounce
+        blinkIndex = 5;
+        //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
+    
+    
+    if (ctl->b()){
+        delay(50); //debounce
+        blinkEnable = !blinkEnable;
+        //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    }
+
 
     if (ctl->a()) {
         static int colorIdx = 0;
@@ -254,8 +268,12 @@ void processControllers() {
 
 // Arduino setup function. Runs in CPU 1
 void setup() {
-
+    ///////////
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    blinkIndex = 5;
+    blinkEnable = false;
+    ///////////
 
     Serial.begin(115200);
     Serial.printf("Firmware: %s\n", BP32.firmwareVersion());
@@ -289,6 +307,27 @@ void loop() {
     bool dataUpdated = BP32.update();
     if (dataUpdated)
         processControllers();
+    
+    ///////////////////////
+    if (millis() - previousMillis >= 500){
+      if (blinkIndex >= 0) {
+        // save the last time you blinked the LED
+        previousMillis = millis();
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        blinkIndex--;
+      }
+    }    
+    /////////////////////
+    if (millis() - previousMillis >= 500 && blinkEnable){
+      
+        // save the last time you blinked the LED
+        previousMillis = millis();
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
+    }
+    /////////////////////////
+
+
+
 
     // The main loop must have some kind of "yield to lower priority task" event.
     // Otherwise, the watchdog will get triggered.
@@ -297,5 +336,5 @@ void loop() {
     // https://stackoverflow.com/questions/66278271/task-watchdog-got-triggered-the-tasks-did-not-reset-the-watchdog-in-time
 
     //     vTaskDelay(1);
-    delay(150);
+    delay(100);
 }
