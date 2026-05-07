@@ -1,9 +1,13 @@
+#include <ESP32Servo.h>
 #include <Bluepad32.h>
 
 //////////////////////////
 unsigned long previousMillis = 0;  // will store last time LED was updated
 int blinkIndex;
 bool blinkEnable;
+int fadeIndex = 0;
+bool fadeDirection = false; //0 UP 1 DOWN
+int brightness = 0;
 ////////////////////////
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
@@ -141,16 +145,18 @@ void processGamepad(ControllerPtr ctl) {
     if (ctl->a()){
         delay(50); //debounce
         blinkIndex = 5;
-        //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
     
     
     if (ctl->b()){
         delay(50); //debounce
         blinkEnable = !blinkEnable;
-        //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     }
 
+    if (ctl->y()){
+        delay(50); //debounce
+        fadeIndex = 30;
+    }
 
     if (ctl->a()) {
         static int colorIdx = 0;
@@ -266,6 +272,52 @@ void processControllers() {
     }
 }
 
+void piscaAlerta() {
+/////////////////////
+    //if (!blinkEnable) {
+    //    digitalWrite(LED_BUILTIN, LOW);
+    //}
+    if (millis() - previousMillis >= 500 && blinkEnable){
+      
+        // save the last time you blinked the LED
+        previousMillis = millis();
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
+    }
+    /////////////////////////
+}
+
+void piscaSeta() {
+///////////////////////
+    if (millis() - previousMillis >= 500){
+      if (blinkIndex >= 0) {
+        // save the last time you blinked the LED
+        previousMillis = millis();
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+        blinkIndex--;
+      }
+    }  
+}
+
+void fadeSeta() {
+    //DEVE FAZER 3 CICLOS DE FADEIN FADEOUT
+    if (fadeIndex > 0) {
+        if (millis() - previousMillis >= 25) {
+            if ((brightness > 250) || (brightness < 0)) {
+                fadeDirection = !fadeDirection;
+            }
+            if (fadeDirection == false) {
+                brightness = brightness + 25;
+            }
+            if (fadeDirection == true) {
+                brightness = brightness - 25;
+            }
+            previousMillis = millis();
+        }
+        analogWrite(LED_BUILTIN, brightness);
+        fadeIndex--;
+    }
+}
+
 // Arduino setup function. Runs in CPU 1
 void setup() {
     ///////////
@@ -308,25 +360,10 @@ void loop() {
     if (dataUpdated)
         processControllers();
     
-    ///////////////////////
-    if (millis() - previousMillis >= 500){
-      if (blinkIndex >= 0) {
-        // save the last time you blinked the LED
-        previousMillis = millis();
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        blinkIndex--;
-      }
-    }    
-    /////////////////////
-    if (millis() - previousMillis >= 500 && blinkEnable){
       
-        // save the last time you blinked the LED
-        previousMillis = millis();
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
-    }
-    /////////////////////////
-
-
+    piscaAlerta();
+    piscaSeta();
+    fadeSeta();
 
 
     // The main loop must have some kind of "yield to lower priority task" event.
@@ -336,5 +373,5 @@ void loop() {
     // https://stackoverflow.com/questions/66278271/task-watchdog-got-triggered-the-tasks-did-not-reset-the-watchdog-in-time
 
     //     vTaskDelay(1);
-    delay(100);
+    delay(150);
 }
