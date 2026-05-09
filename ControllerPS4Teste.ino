@@ -2,12 +2,32 @@
 #include <Bluepad32.h>
 
 //////////////////////////
+// define directions for LED fade
+#define UP 0
+#define DOWN 1
+// constants for min and max PWM
+const int minPWM = 0;
+const int maxPWM = 255;
+// State Variable for Fade Direction
+byte fadeDirection = UP;
+// Global Fade Value
+// but be bigger than byte and signed, for rollover
+int fadeValue = 0;
+// How smooth to fade?
+byte fadeIncrement = 5;
+// millis() timing Variable, just for fading
+unsigned long previousFadeMillis;
+// How fast to increment?
+int fadeInterval = 5;
+//Conta 3 vezes que fadeDirection muda para UP
+int fadeIndex = 0;
+//////////////////////////
 unsigned long previousMillis = 0;  // will store last time LED was updated
 int blinkIndex;
 bool blinkEnable;
-int fadeIndex = 0;
-bool fadeDirection = false; //0 UP 1 DOWN
-int brightness = 0;
+//int fadeIndex = 0;
+//bool fadeDirection = false; //0 UP 1 DOWN
+//int brightness = 0;
 ////////////////////////
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
@@ -144,18 +164,21 @@ void processGamepad(ControllerPtr ctl) {
     //tentar debaouce com delay e com milis
     if (ctl->a()){
         delay(50); //debounce
-        blinkIndex = 5;
+        blinkIndex = 6; //piscaSeta() 3x
     }
     
     
     if (ctl->b()){
-        delay(50); //debounce
-        blinkEnable = !blinkEnable;
+        delay(100); //debounce
+        blinkEnable = !blinkEnable; //piscaAlerta()
+        if (!blinkEnable){
+            digitalWrite(LED_BUILTIN, LOW);
+        }
     }
 
     if (ctl->y()){
         delay(50); //debounce
-        fadeIndex = 30;
+        fadeIndex = 3; //doTheFade() 3x
     }
 
     if (ctl->a()) {
@@ -288,43 +311,63 @@ void piscaAlerta() {
 
 void piscaSeta() {
 ///////////////////////
-    if (millis() - previousMillis >= 500){
-      if (blinkIndex >= 0) {
-        // save the last time you blinked the LED
-        previousMillis = millis();
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        blinkIndex--;
-      }
-    }  
+    if (blinkIndex >= 1 && blinkIndex <=6) {
+        if (millis() - previousMillis >= 500){
+            // save the last time you blinked the LED
+            previousMillis = millis(); 
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            blinkIndex--;
+        }
+    }
 }
 
-void fadeSeta() {
-    //DEVE FAZER 3 CICLOS DE FADEIN FADEOUT
-    if (fadeIndex > 0) {
-        if (millis() - previousMillis >= 25) {
-            if ((brightness > 250) || (brightness < 0)) {
-                fadeDirection = !fadeDirection;
+void doTheFade(unsigned long thisMillis) {
+   //fadeIndex between 3 and 1 to 3 fades
+   if (fadeIndex >= 1 && fadeIndex <= 3){
+      // is it time to update yet?
+      // if not, nothing happens
+      if (thisMillis - previousFadeMillis >= fadeInterval) {
+         // yup, it's time!
+         if (fadeDirection == UP) {
+            fadeValue = fadeValue + fadeIncrement;
+            if (fadeValue >= maxPWM) {
+               // At max, limit and change direction
+               fadeValue = maxPWM;
+               fadeDirection = DOWN;
             }
-            if (fadeDirection == false) {
-                brightness = brightness + 25;
+         } else {
+            //if we aren't going up, we're going down
+            fadeValue = fadeValue - fadeIncrement;
+            if (fadeValue <= minPWM) {
+               // At min, limit and change direction
+               fadeValue = minPWM;
+               fadeDirection = UP;
+               fadeIndex = fadeIndex - 1;
             }
-            if (fadeDirection == true) {
-                brightness = brightness - 25;
-            }
-            previousMillis = millis();
-        }
-        analogWrite(LED_BUILTIN, brightness);
-        fadeIndex--;
-    }
+         }
+         // Only need to update when it changes
+         analogWrite(LED_BUILTIN, fadeValue);
+
+         // reset millis for the next iteration (fade timer only)
+         previousFadeMillis = thisMillis;
+      }
+
+   }
+
+   
 }
 
 // Arduino setup function. Runs in CPU 1
 void setup() {
+    
     ///////////
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
-    blinkIndex = 5;
+    blinkIndex = 0;
     blinkEnable = false;
+    ///////////
+    ///////////
+    //analogWrite(LED_BUILTIN, fadeValue);
     ///////////
 
     Serial.begin(115200);
@@ -363,7 +406,7 @@ void loop() {
       
     piscaAlerta();
     piscaSeta();
-    fadeSeta();
+    doTheFade(millis());
 
 
     // The main loop must have some kind of "yield to lower priority task" event.
