@@ -1,5 +1,6 @@
 #include <ESP32Servo.h>
 #include <Bluepad32.h>
+#include "lights.h"
 
 //////////////////////////
 // define directions for LED fade
