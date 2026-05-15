@@ -2,34 +2,8 @@
 #include <Bluepad32.h>
 #include "lights.h"
 
-//////////////////////////
-// define directions for LED fade
-#define UP 0
-#define DOWN 1
-// constants for min and max PWM
-const int minPWM = 0;
-const int maxPWM = 255;
-// State Variable for Fade Direction
-byte fadeDirection = UP;
-// Global Fade Value
-// but be bigger than byte and signed, for rollover
-int fadeValue = 0;
-// How smooth to fade?
-byte fadeIncrement = 5;
-// millis() timing Variable, just for fading
-unsigned long previousFadeMillis;
-// How fast to increment?
-int fadeInterval = 5;
-//Conta 3 vezes que fadeDirection muda para UP
-int fadeIndex = 0;
-//////////////////////////
-unsigned long previousMillis = 0;  // will store last time LED was updated
-int blinkIndex;
-bool blinkEnable;
-//int fadeIndex = 0;
-//bool fadeDirection = false; //0 UP 1 DOWN
-//int brightness = 0;
-////////////////////////
+
+
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
 
@@ -164,13 +138,13 @@ void processGamepad(ControllerPtr ctl) {
     //TENTATIVA DE EXECUTAR UM TOGGLE NO LED COM BOTAO A
     //tentar debaouce com delay e com milis
     if (ctl->a()){
-        delay(50); //debounce
+        delay(100); //debounce
         blinkIndex = 6; //piscaSeta() 3x
     }
     
     
     if (ctl->b()){
-        delay(100); //debounce
+        delay(150); //debounce
         blinkEnable = !blinkEnable; //piscaAlerta()
         if (!blinkEnable){
             digitalWrite(LED_BUILTIN, LOW);
@@ -178,7 +152,7 @@ void processGamepad(ControllerPtr ctl) {
     }
 
     if (ctl->y()){
-        delay(50); //debounce
+        delay(150); //debounce
         fadeIndex = 3; //doTheFade() 3x
     }
 
@@ -296,67 +270,9 @@ void processControllers() {
     }
 }
 
-void piscaAlerta() {
-/////////////////////
-    //if (!blinkEnable) {
-    //    digitalWrite(LED_BUILTIN, LOW);
-    //}
-    if (millis() - previousMillis >= 500 && blinkEnable){
-      
-        // save the last time you blinked the LED
-        previousMillis = millis();
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
-    }
-    /////////////////////////
-}
 
-void piscaSeta() {
-///////////////////////
-    if (blinkIndex >= 1 && blinkIndex <=6) {
-        if (millis() - previousMillis >= 500){
-            // save the last time you blinked the LED
-            previousMillis = millis(); 
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-            blinkIndex--;
-        }
-    }
-}
 
-void doTheFade(unsigned long thisMillis) {
-   //fadeIndex between 3 and 1 to 3 fades
-   if (fadeIndex >= 1 && fadeIndex <= 3){
-      // is it time to update yet?
-      // if not, nothing happens
-      if (thisMillis - previousFadeMillis >= fadeInterval) {
-         // yup, it's time!
-         if (fadeDirection == UP) {
-            fadeValue = fadeValue + fadeIncrement;
-            if (fadeValue >= maxPWM) {
-               // At max, limit and change direction
-               fadeValue = maxPWM;
-               fadeDirection = DOWN;
-            }
-         } else {
-            //if we aren't going up, we're going down
-            fadeValue = fadeValue - fadeIncrement;
-            if (fadeValue <= minPWM) {
-               // At min, limit and change direction
-               fadeValue = minPWM;
-               fadeDirection = UP;
-               fadeIndex = fadeIndex - 1;
-            }
-         }
-         // Only need to update when it changes
-         analogWrite(LED_BUILTIN, fadeValue);
 
-         // reset millis for the next iteration (fade timer only)
-         previousFadeMillis = thisMillis;
-      }
-
-   }
-
-   
-}
 
 // Arduino setup function. Runs in CPU 1
 void setup() {
@@ -417,5 +333,5 @@ void loop() {
     // https://stackoverflow.com/questions/66278271/task-watchdog-got-triggered-the-tasks-did-not-reset-the-watchdog-in-time
 
     //     vTaskDelay(1);
-    delay(150);
+    delay(25);
 }
